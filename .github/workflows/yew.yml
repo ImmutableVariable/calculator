@@ -37,7 +37,7 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
       - name: Build with Trunk
-        run: trunk build --release
+        run: trunk build --release --public-url /calculator
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
