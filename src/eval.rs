@@ -168,20 +168,17 @@ fn parse_factor(iter: &mut std::iter::Peekable<std::slice::Iter<Token>>) -> Resu
 
     while let Some(&token) = iter.peek() {
         match token {
-            Token::Operator('*') | Token::Operator('/') => {
+            Token::Operator(op @ ('*' | '/')) => {
                 iter.next();
-                let rhs = if let Some(&Token::Operator('-')) = iter.peek() {
-                    iter.next();
-                    let expr = parse_term(iter)?;
-                    AST::Neg(Box::new(expr))
-                } else {
-                    parse_term(iter)?
+                let rhs = match iter.peek() {
+                    Some(&Token::Operator('-')) => {
+                        iter.next();
+                        let expr = parse_term(iter)?;
+                        AST::Neg(Box::new(expr))
+                    }
+                    _ => parse_term(iter)?,
                 };
-                lhs = AST::BinOp(match token {
-                    Token::Operator('*') => '*',
-                    Token::Operator('/') => '/',
-                    _ => unreachable!(),
-                }, Box::new(lhs), Box::new(rhs));
+                lhs = AST::BinOp(*op, Box::new(lhs), Box::new(rhs));
             },
             _ => break,
         }
@@ -195,14 +192,10 @@ fn parse_expr(iter: &mut std::iter::Peekable<std::slice::Iter<Token>>) -> Result
 
     while let Some(&token) = iter.peek() {
         match token {
-            Token::Operator('+') | Token::Operator('-') => {
+            Token::Operator(op@ ('+' | '-')) => {
                 iter.next();
                 let rhs = parse_factor(iter)?;
-                lhs = AST::BinOp(match token {
-                    Token::Operator('+') => '+',
-                    Token::Operator('-') => '-',
-                    _ => unreachable!(),
-                }, Box::new(lhs), Box::new(rhs));
+                lhs = AST::BinOp(*op, Box::new(lhs), Box::new(rhs));
             },
             _ => break,
         }
