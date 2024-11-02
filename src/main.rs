@@ -13,15 +13,17 @@ fn Content() -> Html {
             <h1>{"Calculator!"}</h1>
             <p>{"This is a simple calculator that can evaluate basic arithmetic expressions."}</p>
             <ul>
-                <li>{"+, -, *, / and basic order of operations"}</li>
-                <li>{"Parentheses for grouping expressions"}</li>
+                <li>{"+, -, *, /, ^ and order of operations"}</li>
+                <li>{"Parentheses and brackets for grouping expressions"}</li>
                 <li>{"Floating point numbers"}</li>
                 <li>{"Negative numbers and negative grouping (e.g. -3, -(3 + 4))"}</li>
+                <li>{"The website is built with Yew, a rust framework."}</li>
             </ul>
             <Evaluator />
         </>
     }
 }
+
 #[function_component]
 fn App() -> Html {
     html! {

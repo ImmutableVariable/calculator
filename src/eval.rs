@@ -39,8 +39,8 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenError> {
     while let Some(&c) = iter.peek() {
         match c {
             '0'..='9' | '.' /*| '-' if matches!(tokens.last(), Some(Token::Operator(_)) | Some(Token::LParen) | None)*/ => parse_number_or_negative(&mut iter, &mut tokens)?,
-            '(' | ')' => parse_parenthesis(&mut iter, &mut tokens)?,
-            '+' | '-' | '*' | '/' => parse_operator(&mut iter, &mut tokens)?,
+            '(' | ')' | '[' | ']' => parse_parenthesis(&mut iter, &mut tokens)?,
+            '+' | '-' | '*' | '/' | '^' => parse_operator(&mut iter, &mut tokens)?,
             ' ' | '\t' | '\n' => {
                 iter.next();
             },
@@ -92,6 +92,9 @@ fn parse_parenthesis(iter: &mut std::iter::Peekable<std::str::Chars>, tokens: &m
         match paren {
             '(' => tokens.push(Token::LParen),
             ')' => tokens.push(Token::RParen),
+            // these are the same, its just too differentiate between layered parenthesis
+            '[' => tokens.push(Token::LParen),
+            ']' => tokens.push(Token::RParen),
             _ => return Err(TokenError::InvalidCharacter(paren)),
         }
         iter.next();
@@ -157,13 +160,30 @@ fn parse_term(iter: &mut std::iter::Peekable<std::slice::Iter<Token>>) -> Result
     }
 }
 
+fn parse_exponent(iter: &mut std::iter::Peekable<std::slice::Iter<Token>>) -> Result<AST, ASTError> {
+    let mut lhs = parse_term(iter)?;
+
+    while let Some(&token) = iter.peek() {
+        match token {
+            Token::Operator('^') => {
+                iter.next();
+                let rhs = parse_term(iter)?;
+                lhs = AST::BinOp('^', Box::new(lhs), Box::new(rhs));
+            },
+            _ => break,
+        }
+    }
+
+    Ok(lhs)
+}
+
 fn parse_factor(iter: &mut std::iter::Peekable<std::slice::Iter<Token>>) -> Result<AST, ASTError> {
     let mut lhs = if let Some(&Token::Operator('-')) = iter.peek() {
         iter.next();
-        let expr = parse_term(iter)?;
+        let expr = parse_exponent(iter)?;
         AST::Neg(Box::new(expr))
     } else {
-        parse_term(iter)?
+        parse_exponent(iter)?
     };
 
     while let Some(&token) = iter.peek() {
@@ -173,10 +193,10 @@ fn parse_factor(iter: &mut std::iter::Peekable<std::slice::Iter<Token>>) -> Resu
                 let rhs = match iter.peek() {
                     Some(&Token::Operator('-')) => {
                         iter.next();
-                        let expr = parse_term(iter)?;
+                        let expr = parse_exponent(iter)?;
                         AST::Neg(Box::new(expr))
                     }
-                    _ => parse_term(iter)?,
+                    _ => parse_exponent(iter)?,
                 };
                 lhs = AST::BinOp(*op, Box::new(lhs), Box::new(rhs));
             },
@@ -215,6 +235,7 @@ pub fn eval(ast: &AST) -> f64 {
                 '-' => lhs_val - rhs_val,
                 '*' => lhs_val * rhs_val,
                 '/' => lhs_val / rhs_val,
+                '^' => lhs_val.powf(rhs_val),
                 _ => unreachable!(),
             }
         },
@@ -307,5 +328,21 @@ mod test {
         let ast = parse(tokens).unwrap();
         let result = eval(&ast);
         assert_eq!(result, 11.0);   
+    }
+
+    #[test]
+    fn pemdas1() {
+        let tokens = tokenize("-24 + 3 + 8 - [(-1 + 13)^2 - (2 + 13)]").unwrap();
+        let ast = parse(tokens).unwrap();
+        let result = eval(&ast);
+        assert_eq!(result, -142.0);
+    }
+
+    #[test]
+    fn pemdas2() {
+        let tokens = tokenize("3 + 4 * 2 / (1 - 5)^2").unwrap();
+        let ast = parse(tokens).unwrap();
+        let result = eval(&ast);
+        assert_eq!(result, 3.5);
     }
 }
