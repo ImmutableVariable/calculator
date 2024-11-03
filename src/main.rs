@@ -17,7 +17,7 @@ fn Content() -> Html {
                 <li>{"Parentheses and brackets for grouping expressions"}</li>
                 <li>{"Floating point numbers"}</li>
                 <li>{"Negative numbers and negative grouping (e.g. -3, -(3 + 4))"}</li>
-                <li>{"The website is built with Yew, a rust framework."}</li>
+                <li>{"The website is built with Yew, a rust framework. The project is viewable "} <a href="https://github.com/ImmutableVariable/calculator">{"here"}</a> {"!"}</li>
             </ul>
             <Evaluator />
         </>
