@@ -1,10 +1,10 @@
 use yew::prelude::*;
 
 mod nav;
-mod repl;
+mod eval_box;   
 mod eval;
 use nav::Navbar;
-use repl::Evaluator;
+use eval_box::Evaluator;
 
 #[function_component]
 fn Content() -> Html {
